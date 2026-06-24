@@ -18,13 +18,13 @@ lists the target product and the minimum version it was tested against.
 
 | Extension | What it does | Target | Min. version | Author |
 |-----------|--------------|--------|--------------|--------|
-| _(example)_ [cte-calculator](https://github.com/CorrelatedSolutions-Community/cte-calculator) | Computes CTE per inspector region from strain + analog temperature CSVs | VIC-3D | 11 | @example |
+| [displacement-magnitude](https://github.com/CorrelatedSolutions-Community/displacement-magnitude) | Computes displacement magnitude `D` as a new full-field variable (shipped CS extension, mirrored as a reference example) | VIC-3D | 11 | Correlated Solutions |
 
 ### VIC-2D extensions
 
 | Extension | What it does | Target | Min. version | Author |
 |-----------|--------------|--------|--------------|--------|
-| _(example)_ [coordinate-rotation](https://github.com/CorrelatedSolutions-Community/coordinate-rotation) | Re-expresses full-field results in an in-plane-rotated frame | VIC-2D | 8 | @example |
+| [displacement-magnitude](https://github.com/CorrelatedSolutions-Community/displacement-magnitude) | Computes displacement magnitude `D` as a new full-field variable (shipped CS extension, mirrored as a reference example) | VIC-2D | 8 | Correlated Solutions |
 
 ### vicpyx scripts
 
