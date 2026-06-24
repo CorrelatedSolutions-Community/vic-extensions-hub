@@ -1,0 +1,82 @@
+name: Share an extension or script
+description: Submit a custom VIC extension or vicpyx script to be added to the community hub.
+title: "[Share] <your extension name>"
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing! Fill in the fields below. You don't need to know git —
+        you can attach your file directly in the description field. A maintainer
+        will review it and add it to the hub index.
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: A short, descriptive name.
+      placeholder: Weld Seam Tracker
+    validations:
+      required: true
+  - type: dropdown
+    id: product
+    attributes:
+      label: Target product
+      options:
+        - VIC-3D
+        - VIC-2D
+        - vicpyx (standalone script)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Minimum tested version
+      description: Which product version did you build/test against?
+      placeholder: "VIC-3D 11"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What does it do?
+      description: A few sentences. What problem does it solve, and what does it output?
+    validations:
+      required: true
+  - type: textarea
+    id: install
+    attributes:
+      label: How do you install / run it?
+      placeholder: "Extensions → Install, select the .zve. Then run from the Extensions menu on a full sequence."
+    validations:
+      required: true
+  - type: dropdown
+    id: license
+    attributes:
+      label: License
+      description: How may others use your code? (Required to be featured.)
+      options:
+        - MIT
+        - Apache-2.0
+        - BSD-3-Clause
+        - Other (describe in notes)
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link to the code (optional)
+      description: If it's already on GitHub or elsewhere, paste the URL. Otherwise attach the file in the notes box below.
+  - type: textarea
+    id: notes
+    attributes:
+      label: File attachment / notes
+      description: Drag-and-drop your .zve / .py / .zip here, plus anything else we should know.
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have the right to share this code and agree it's distributed under the license above.
+          required: true
+        - label: I removed any customer data, credentials, and absolute paths.
+          required: true
