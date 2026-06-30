@@ -182,7 +182,8 @@ Build it with the packaging script in
   "x-variables": ["pos"],
   "y-variables": ["epsilon"],
   "help": "help.html",
-  "argument-groups": [ ... ]
+  "argument-groups": [ ... ],
+  "presets": [ ... ]
 }
 ```
 
@@ -202,6 +203,7 @@ Build it with the packaging script in
 | `help` | No | Path to help file inside .zve (typically `"help.html"`) |
 | `auto-run` | No | `true` to start processing as soon as the dialog opens |
 | `auto-accept` | No | `true` to close the dialog automatically after a successful run |
+| `presets` | No | Named value sets offered to compatible args via a right-click menu — see [presets](#presets) |
 
 ### argument-groups
 
@@ -253,10 +255,10 @@ These can appear on most argument entries.
 | `name` | all | argparse destination — accessible as `self.options.<name with underscores>` |
 | `ui-text` | all | UI label. May be a **list** of strings for multi-element doubles (e.g. `["Center x [mm]", "Center y [mm]"]`) |
 | `default` | all | Default value |
-| `store-default` | all | `true` to persist user's last choice across runs |
+| `store-default` | `checkbox`, `integer`, `double`, `combobox`, `string`, `input-file-select`, `output-file-select` | `true` to persist the user's last value across runs. When any arg sets it, a "Store default values" checkbox appears at the bottom of the dialog |
 | `optional` | `integer`, `double`, `global-constants`, `argument-list` | If `true`, shows an enabling checkbox; the arg is only passed to the script when checked. Check at runtime with `hasattr(self.options, '<name>')` and `is not None` |
 | `default-check-state` | args with `optional: true` | Initial checked state of the enabling checkbox (default `false`) |
-| `can-be-empty` | `string`, `input-file-select` | If `false` (default), the extension can't start while the field is blank; `true` allows empty |
+| `can-be-empty` | `string`, `input-file-select` | If `false` (default), the extension can't start while the field is blank; `true` allows empty. For `input-file-select`, an empty selection means the argument is **omitted** from the script command line |
 | `app-type` | all | Per-argument visibility — show only for Vic-3D, Vic-2D, or Common (overrides top-level when narrower) |
 | `stretch` | all args + `argument-groups` ui-options | UI layout weight (int, default `0`). `9` is the canonical value to fill remaining vertical space |
 | `ui-style` | `project-files`, `variable-list`, `inspector-items` | `"list"` for list-box, `"combobox"` for dropdown |
@@ -338,9 +340,12 @@ These can appear on most argument entries.
 
 `preselection` defaults to `["U", "V", "W", "exx", "eyy", "exy"]`. Valid
 `variable-types` tags are the kebab-case forms of the `VicDataVariableType`
-enum (e.g. `pixel-coordinates`, `global-coordinates`, `pixel-displacements`,
-`global-displacements`, `strain`, `correlation`, `disparity`, `curvature`,
-`angle`, `stress`, …).
+enum: `pixel-coordinates`, `global-coordinates`, `pixel-displacements`,
+`global-displacements`, `strain`, `correlation`, `disparity`,
+`cylinder-coordinates`, `cylinder-displacements`, `pixel-velocities`,
+`global-velocities`, `strain-rate`, `curvature`, `angle`, `angular-velocity`,
+`global-accelerations`, `pixel-accelerations`, `stress`, `angular-acceleration`.
+Read the enum in `vicpy.pyi` for the version-matched list.
 
 > **Wiring:** For `VariableListMixin` to bind automatically, the arg `name`
 > must be `"variable-list"`. To use a custom name (as in the example above), add
@@ -354,6 +359,7 @@ enum (e.g. `pixel-coordinates`, `global-coordinates`, `pixel-displacements`,
   "type": "input-file-select",
   "ui-text": "JSON",
   "file-extensions": { "JSON": [".json"] },
+  "can-be-empty": false,
   "store-default": true
 }
 ```
@@ -368,7 +374,7 @@ enum (e.g. `pixel-coordinates`, `global-coordinates`, `pixel-displacements`,
 }
 ```
 
-`file-extensions` is a dict of label → list of extensions; the picker shows them in its filter dropdown.
+`file-extensions` is a dict of label → list of extensions; the picker shows them in its filter dropdown. On `input-file-select`, `can-be-empty: true` allows leaving the field blank, in which case the argument is omitted from the script command line (check with `hasattr(self.options, '<name>')`).
 
 ### `aoi-mask` and `subset-size` args
 
@@ -403,9 +409,15 @@ These wire to mixins automatically; no extra fields needed.
 
 `digits` controls displayed decimal precision. `optional: true` on a double makes it skippable.
 
-#### Multi-element double (2 or 3 values in one arg)
+#### Vector arguments (`integer`, `double`, `string`)
 
-When `ui-text` is a list, the arg reads multiple values and parses them with a `parse_double_vector` argparse type at runtime. The value is iterable.
+For **`integer`, `double`, and `string`** args, making `ui-text` a **list** of
+labels turns the arg into a fixed-length vector: one input widget is created per
+label. `default` may be a single value (applied to every element) or a list
+whose length matches `ui-text`. The host passes the whole vector to the script
+as one **colon-separated** value (e.g. `--center-point 1.0:2.0`), so add a
+matching argparse type that splits it (for doubles, the shipped
+`parse_double_vector`). The parsed value is iterable.
 
 ```json
 {
@@ -499,6 +511,59 @@ An editable table of homogeneous rows for variable-length lists.
 
 Each row is passed to the script as a separate `--<name>` argument whose value
 is the row's cells joined by colons.
+
+### `presets` (top-level)
+
+`presets` is a **top-level** config property (a sibling of `argument-groups`,
+not an argument type). It defines named value sets that the user can pour into a
+compatible argument from a right-click menu, instead of typing values by hand.
+**Presets are an input convenience only — they are never passed to the script on
+their own.**
+
+```json
+"presets": [
+  {
+    "name": "Standard speckle sizes",
+    "type": "integer",
+    "values": { "Coarse": 7, "Medium": 5, "Fine": 3 }
+  },
+  {
+    "name": "Crop regions",
+    "type": "integer",
+    "values": {
+      "Top left":  [0, 0, 512, 512],
+      "Centered":  [256, 256, 512, 512]
+    }
+  }
+]
+```
+
+| Field | Notes |
+|---|---|
+| `name` | Unique display name for the preset (shown in the menu; may be translated) |
+| `type` | Value type: `"integer"`, `"double"`, or `"string"` |
+| `values` | Non-empty object mapping a menu label → a scalar **or** a flat list (a fixed-length vector). Every value in one preset must have the same number of elements, each matching `type` |
+
+**Arity matching.** The number of elements in a preset's values is its *arity*.
+A preset is offered for an argument only when both type and arity match:
+
+- A **scalar** preset (arity 1) matches a single `integer`/`double`/`string` arg.
+- An **arity-*N*** preset matches the *vector* form of those args (an
+  `integer`/`double`/`string` whose `ui-text` is a list of *N* labels — see
+  [Vector arguments](#vector-arguments-integer-double-string)).
+- A preset also matches an `argument-list` arg whose element `type` and column
+  count match its arity.
+
+**UI.** Compatible args expose matching presets through a right-click **"From
+presets"** submenu (grouped per preset when more than one matches); selecting a
+key fills the arg with that value. For `argument-list`, right-clicking a cell
+offers presets that match the row shape and fills the whole clicked row. The
+same menu has an **"Edit presets…"** entry for adding/removing/editing keys and
+values; those edits are saved to the extension's stored defaults
+**independently of** the "Store default values" checkbox.
+
+> **Reserved name:** `__presets__` is reserved for storing edited presets — do
+> not use it as an argument `name`.
 
 > This section is curated, not exhaustive. The host's config parser
 > (`iris/vice/script_argument_basic.cpp`, `script_config.cpp`,
